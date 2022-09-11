@@ -1,16 +1,24 @@
 const Project = require('../models/Project');
 const Client = require('../models/Client');
 
-const {GraphQLObjectType, GraphQLID, GraphQLString, GraphQLSchema, GraphQLList, GraphQLNonNull} = require('graphql')
+const {
+    GraphQLObjectType,
+    GraphQLID,
+    GraphQLString,
+    GraphQLSchema,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLEnumType
+} = require('graphql')
 
 //Project Type
 const ProjectType = new GraphQLObjectType({
     name: 'Project',
     fields: () => ({
-        id: {type: GraphQLID},
-        name: {type: GraphQLString},
-        description: {type: GraphQLString},
-        status: {type: GraphQLString},
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        description: { type: GraphQLString },
+        status: { type: GraphQLString },
         client: {
             type: ClientType,
             resolve(parent, args) {
@@ -25,10 +33,10 @@ const ProjectType = new GraphQLObjectType({
 const ClientType = new GraphQLObjectType({
     name: 'Client',
     fields: () => ({
-        id: {type: GraphQLID},
-        name: {type: GraphQLString},
-        email: {type: GraphQLString},
-        phone: {type: GraphQLString}
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        email: { type: GraphQLString },
+        phone: { type: GraphQLString }
     })
 });
 
@@ -43,7 +51,7 @@ const RootQuery = new GraphQLObjectType({
         },
         project: {
             type: ProjectType,
-            args: {id: {type: GraphQLID}},
+            args: { id: { type: GraphQLID } },
             resolve(parent, args) {
                 return Project.findById(args.id)
             }
@@ -56,7 +64,7 @@ const RootQuery = new GraphQLObjectType({
         },
         client: {
             type: ClientType,
-            args: {id: {type: GraphQLID}},
+            args: { id: { type: GraphQLID } },
             resolve(parent, args) {
                 return Client.findById(args.id);
             }
@@ -71,9 +79,9 @@ const mutation = new GraphQLObjectType({
         addClient: {
             type: ClientType,
             args: {
-                name: {type: new GraphQLNonNull(GraphQLString)},
-                email: {type: new GraphQLNonNull(GraphQLString)},
-                phone: {type: new GraphQLNonNull(GraphQLString)}
+                name: { type: new GraphQLNonNull(GraphQLString) },
+                email: { type: new GraphQLNonNull(GraphQLString) },
+                phone: { type: new GraphQLNonNull(GraphQLString) }
             },
             resolve(parent, args) {
                 const client = new Client({
@@ -81,21 +89,48 @@ const mutation = new GraphQLObjectType({
                     email: args.email,
                     phone: args.phone
                 });
-
                 return client.save();
             },
-
         },
         // Delete a client
         deleteClient: {
             type: ClientType,
             args: {
-                id: {type: new GraphQLNonNull(GraphQLID)}
+                id: { type: new GraphQLNonNull(GraphQLID) }
             },
             resolve(parent, args) {
                 return Client.findByIdAndRemove(args.id);
             }
-        }
+        },
+        // Add a project
+        addProject: {
+            type: ProjectType,
+            args: {
+                name: { type: new GraphQLNonNull(GraphQLString) },
+                description: { type: new GraphQLNonNull(GraphQLString) },
+                status: {
+                    type: new GraphQLEnumType({
+                        name: 'ProjectStatus',
+                        values: {
+                            'new': { value: 'Not Started' },
+                            'progress': { value: 'In Progress' },
+                            'completed': { value: 'Completed' }
+                        }
+                    }),
+                    defaultValue: 'Not Started',
+                },
+                cliendId: { type: new GraphQLNonNull(GraphQLID) },
+            },
+            resolve(parent, args) {
+                const project = new Project({
+                    name: args.name,
+                    description: args.description,
+                    status: args.status,
+                    cliendId: args.cliendId
+                });
+                return project.save();
+            },
+        },
     },
 })
 
